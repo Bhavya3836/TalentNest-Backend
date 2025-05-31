@@ -36,7 +36,7 @@ public class RecruiterJobController {
             JobPost job = jobService.createJob(jobPostRequest, token);
             return ResponseEntity.ok(job);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage()); // ✅ Handle duplicate job error
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             System.out.println("Error in createJob: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating job: " + e.getMessage());

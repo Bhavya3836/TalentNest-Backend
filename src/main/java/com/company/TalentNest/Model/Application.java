@@ -37,6 +37,10 @@ public class Application {
         this.appliedAt = appliedAt;
     }
 
+    public Application() {
+
+    }
+
     public Integer getId() {
         return id;
     }
