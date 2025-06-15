@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.company.TalentNest.Enums.ApplicationStatus.Applied;
@@ -66,6 +67,7 @@ public class JobApplicationService {
 
             applicationRepository.save(application);
 
+
         }else{
             throw new RuntimeException("Resume not found for Id");
         }
@@ -74,4 +76,16 @@ public class JobApplicationService {
 
 
     }
+
+
+    public Optional<List<Application>> applicationHistory(String token){
+        Long user = jwtTokenProvider.getUserIdFromToken(token);
+        List<Application> applicationList = applicationRepository.findAllByCandidateId(Math.toIntExact(user));
+        if(applicationList.isEmpty()){
+            throw new IllegalArgumentException("User id does not have any applications");
+        }
+
+        return Optional.of(applicationList);
+    }
+
 }

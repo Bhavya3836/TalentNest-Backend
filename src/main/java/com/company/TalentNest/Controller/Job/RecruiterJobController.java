@@ -1,6 +1,8 @@
 package com.company.TalentNest.Controller.Job;
 
+import com.company.TalentNest.DTO.Request.JobApplicationRecruiterActionRequest;
 import com.company.TalentNest.DTO.Request.JobPostRequest;
+import com.company.TalentNest.Model.Application;
 import com.company.TalentNest.Model.JobPost;
 import com.company.TalentNest.Services.RecruiterService;
 import org.springframework.http.HttpHeaders;
@@ -17,9 +19,12 @@ import java.util.Optional;
 @RequestMapping("/admin/api/v1/jobs")
 public class RecruiterJobController {
     private final RecruiterService jobService;
+    private final RecruiterService recruiterService;
 
-    public RecruiterJobController(RecruiterService jobService) {
+
+    public RecruiterJobController(RecruiterService jobService, RecruiterService recruiterService) {
         this.jobService = jobService;
+        this.recruiterService = recruiterService;
     }
 
     @PostMapping
@@ -56,4 +61,54 @@ public class RecruiterJobController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching jobs: " + e.getMessage());
         }
     }
+
+    @PreAuthorize("hasAuthority('ROLE_RECRUITER') or hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/reject")
+    public ResponseEntity<?> rejectApplication(@RequestBody JobApplicationRecruiterActionRequest request) {
+        try {
+            Application application = recruiterService.rejectApplicant(request);
+            return ResponseEntity.ok(application);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Application ID not found: " + request.getApplicationId());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Application not found with ID: " + request.getApplicationId());
+        } catch (Exception e) {
+            System.out.println("Error rejecting application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_RECRUITER') or hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/shortlist")
+    public ResponseEntity<?> shortListApplicant(@RequestBody JobApplicationRecruiterActionRequest request) {
+        try {
+            Application application = recruiterService.shortListApplicant(request);
+            return ResponseEntity.ok(application);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Application ID not found: " + request.getApplicationId());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Application not found with ID: " + request.getApplicationId());
+        } catch (Exception e) {
+            System.out.println("Error rejecting application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_RECRUITER') or hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/hired")
+    public ResponseEntity<?> hireApplicant(@RequestBody JobApplicationRecruiterActionRequest request) {
+        try {
+            Application application = recruiterService.hireApplicant(request);
+            return ResponseEntity.ok(application);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Application ID not found: " + request.getApplicationId());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Application not found with ID: " + request.getApplicationId());
+        } catch (Exception e) {
+            System.out.println("Error rejecting application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
+        }
+    }
+
+
+
+
+
 }

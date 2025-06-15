@@ -13,6 +13,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/users/api/v1/jobs/apply")
 public class UserJobApplicationController {
@@ -37,6 +40,22 @@ public class UserJobApplicationController {
         catch (Exception e) {
             System.out.println("Error in applying to the job");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> applicationHistory(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader){
+        try {
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            Optional<List<Application>> applicationList = jobApplicationService.applicationHistory(token);
+            return ResponseEntity.ok(applicationList);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error in applying to the job");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred");
         }
     }
 }

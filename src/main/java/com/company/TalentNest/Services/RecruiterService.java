@@ -1,15 +1,13 @@
 package com.company.TalentNest.Services;
 
+import com.company.TalentNest.DTO.Request.JobApplicationRecruiterActionRequest;
 import com.company.TalentNest.DTO.Request.JobPostRequest;
-import com.company.TalentNest.Model.Company;
-import com.company.TalentNest.Model.JobPost;
-import com.company.TalentNest.Model.Skills;
-import com.company.TalentNest.Model.User;
-import com.company.TalentNest.Repo.CompanyRepository;
-import com.company.TalentNest.Repo.JobRepository;
-import com.company.TalentNest.Repo.SkillsRespository;
-import com.company.TalentNest.Repo.UserRepository;
+import com.company.TalentNest.Model.*;
+import com.company.TalentNest.Repo.*;
 import com.company.TalentNest.Security.jwt.JwtTokenProvider;
+import com.company.TalentNest.config.EmailService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +15,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+
+
+import static com.company.TalentNest.Enums.ApplicationStatus.*;
 
 
 @Service
@@ -27,14 +29,21 @@ public class RecruiterService {
     public final JwtTokenProvider jwtTokenProvider;
     private final CompanyRepository companyRepository;
     private final SkillsRespository skillsRespository;
+    private final ApplicationRepository applicationRepository;
+    private final JavaMailSender javaMailSender;
+
+    @Autowired
+    private EmailService emailService;
 
 
-    public RecruiterService(UserRepository userRepository, JobRepository jobRepository, JwtTokenProvider jwtTokenProvider, CompanyRepository companyRepository, SkillsRespository skillsRespository) {
+    public RecruiterService(UserRepository userRepository, JobRepository jobRepository, JwtTokenProvider jwtTokenProvider, CompanyRepository companyRepository, SkillsRespository skillsRespository, ApplicationRepository applicationRepository, JavaMailSender javaMailSender) {
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.companyRepository = companyRepository;
         this.skillsRespository = skillsRespository;
+        this.applicationRepository = applicationRepository;
+        this.javaMailSender = javaMailSender;
     }
 
 
@@ -107,5 +116,59 @@ public class RecruiterService {
             return Optional.of(jobPost1);
         }
         return Optional.empty();
+    }
+
+    public Application rejectApplicant(JobApplicationRecruiterActionRequest request) {
+        Application application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new IllegalArgumentException("Application not found with ID: " + request.getApplicationId()));
+
+        application.setCurrentStatus(REJECTED);
+        applicationRepository.save(application);
+
+        User user = userRepository.findById(application.getCandidateId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + application.getCandidateId()));
+
+        JobPost job = jobRepository.findById(application.getJobPostId())
+                .orElseThrow(() -> new IllegalArgumentException("Job not found with ID: " + application.getJobPostId()));
+
+        emailService.sendRejectionEmail(user.getEmail(),user.getFullName(),job.getCompanyName());
+
+
+        return application;
+    }
+
+
+    public Application shortListApplicant(JobApplicationRecruiterActionRequest request){
+        Application application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new IllegalArgumentException("Application not found with Id" + request.getApplicationId()));
+        application.setCurrentStatus(SHORTLISTED);
+        applicationRepository.save(application);
+
+        User user = userRepository.findById(application.getCandidateId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + application.getCandidateId()));
+
+        JobPost job = jobRepository.findById(application.getJobPostId())
+                .orElseThrow(() -> new IllegalArgumentException("Job not found with ID: " + application.getJobPostId()));
+
+        emailService.sendShortlistedEmail(user.getEmail(),user.getFullName(),job.getCompanyName());
+
+        return application;
+    }
+
+    public Application hireApplicant(JobApplicationRecruiterActionRequest request){
+        Application application = applicationRepository.findById(request.getApplicationId())
+                .orElseThrow(() -> new IllegalArgumentException("Application not found with Id" + request.getApplicationId()));
+        application.setCurrentStatus(HIRED);
+        applicationRepository.save(application);
+
+        User user = userRepository.findById(application.getCandidateId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + application.getCandidateId()));
+
+        JobPost job = jobRepository.findById(application.getJobPostId())
+                .orElseThrow(() -> new IllegalArgumentException("Job not found with ID: " + application.getJobPostId()));
+
+        emailService.sendHiredEmail(user.getEmail(),user.getFullName(),job.getCompanyName());
+
+        return application;
     }
 }
